@@ -15,7 +15,10 @@ async function closeWithTimeout(
       close(),
       new Promise<never>((_, reject) => {
         setTimeout(
-          () => reject(new Error(`${label} timed out after ${SHUTDOWN_TIMEOUT_MS}ms`)),
+          () =>
+            reject(
+              new Error(`${label} timed out after ${SHUTDOWN_TIMEOUT_MS}ms`),
+            ),
           SHUTDOWN_TIMEOUT_MS,
         );
       }),
