@@ -8,7 +8,7 @@ import {
   filterSpans,
   getAncestorPath,
 } from "../src/trace-resolver.js";
-import { redactSpans } from "../src/redact.js";
+import { redactRecords } from "../src/redact.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = JSON.parse(
@@ -56,7 +56,7 @@ describe("trace-resolver", () => {
   });
 
   it("uses primary error for error_path while focus uses ancestor path", () => {
-    const redactedSpans = redactSpans(fixture, "summary");
+    const redactedSpans = redactRecords(fixture, "summary");
     const summary = buildSummary(redactedSpans, config.attrs, false, rum);
     const focusPath = getAncestorPath(
       "a100000000000003",

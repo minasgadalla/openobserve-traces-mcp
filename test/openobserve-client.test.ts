@@ -96,6 +96,23 @@ describe("OpenObserveClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("fetchSpanById rejects malformed span hits without span_id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          hits: [{ operation_name: "missing-span-id" }],
+        }),
+      })),
+    );
+
+    const client = new OpenObserveClient(config);
+    await expect(client.fetchSpanById("a100000000000001")).rejects.toThrow(
+      /Malformed OpenObserve span hit/,
+    );
+  });
+
   it("fetchRumLogsBySession queries logs stream with session filter", async () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body));

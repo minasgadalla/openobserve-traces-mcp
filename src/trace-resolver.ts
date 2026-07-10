@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 import { validateTraceId } from "./config.js";
 import { OpenObserveClient } from "./openobserve-client.js";
-import { redactRecords, redactSpans } from "./redact.js";
+import { redactRecords } from "./redact.js";
 import { toMicrosFromSpans } from "./time.js";
 import {
   buildErrorPath,
@@ -71,7 +71,7 @@ export async function resolveTrace(
   }
 
   const redactMode = options.redactMode ?? "summary";
-  const spans = redactSpans(rawSpans, redactMode);
+  const spans = redactRecords(rawSpans, redactMode);
   const rum = redactRecords(rawRum, redactMode);
   const rum_logs = rawRumLogs
     ? redactRecords(rawRumLogs, redactMode)

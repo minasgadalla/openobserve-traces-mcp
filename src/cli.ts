@@ -1,31 +1,36 @@
 #!/usr/bin/env node
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./config.js";
 import { createServer } from "./server.js";
 
-async function shutdown(
-  server: McpServer,
-  transport: StdioServerTransport,
-  signal: string,
+const SHUTDOWN_TIMEOUT_MS = 3_000;
+
+async function closeWithTimeout(
+  label: string,
+  close: () => Promise<void>,
 ): Promise<void> {
+  try {
+    await Promise.race([
+      close(),
+      new Promise<never>((_, reject) => {
+        setTimeout(
+          () => reject(new Error(`${label} timed out after ${SHUTDOWN_TIMEOUT_MS}ms`)),
+          SHUTDOWN_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } catch (err) {
+    console.error(
+      `${label} failed:`,
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}
+
+async function shutdown(server: McpServer, signal: string): Promise<void> {
   console.error(`openobserve-traces-mcp shutting down (${signal})`);
-  try {
-    await server.close();
-  } catch (err) {
-    console.error(
-      "Server close error:",
-      err instanceof Error ? err.message : String(err),
-    );
-  }
-  try {
-    await transport.close();
-  } catch (err) {
-    console.error(
-      "Transport close error:",
-      err instanceof Error ? err.message : String(err),
-    );
-  }
+  await closeWithTimeout("server.close()", () => server.close());
   process.exit(0);
 }
 
@@ -47,7 +52,7 @@ async function main(): Promise<void> {
   const handleSignal = (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    void shutdown(server, transport, signal).catch((err) => {
+    void shutdown(server, signal).catch((err) => {
       console.error("Shutdown error:", err);
       process.exit(1);
     });

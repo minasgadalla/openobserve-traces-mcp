@@ -44,13 +44,6 @@ export function redactRecord<T extends Record<string, unknown>>(
   return out as T;
 }
 
-export function redactSpans<T extends Record<string, unknown>>(
-  spans: T[],
-  mode: RedactMode = "summary",
-): T[] {
-  return spans.map((s) => redactRecord(s, mode));
-}
-
 export function redactRecords<T extends Record<string, unknown>>(
   records: T[],
   mode: RedactMode = "summary",
