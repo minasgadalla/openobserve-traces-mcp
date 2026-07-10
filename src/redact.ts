@@ -11,10 +11,13 @@ const SENSITIVE_SUBSTRINGS = [
   "db_connection_string",
 ];
 
+const SENSITIVE_KEYS = new Set(["email", "user_id", "usr_email", "usr_id"]);
+
 export type RedactMode = "summary" | "full";
 
 function isSensitiveKey(key: string): boolean {
   const lower = key.toLowerCase();
+  if (SENSITIVE_KEYS.has(lower)) return true;
   return SENSITIVE_SUBSTRINGS.some((s) => lower.includes(s));
 }
 
@@ -46,4 +49,11 @@ export function redactSpans<T extends Record<string, unknown>>(
   mode: RedactMode = "summary",
 ): T[] {
   return spans.map((s) => redactRecord(s, mode));
+}
+
+export function redactRecords<T extends Record<string, unknown>>(
+  records: T[],
+  mode: RedactMode = "summary",
+): T[] {
+  return records.map((record) => redactRecord(record, mode));
 }

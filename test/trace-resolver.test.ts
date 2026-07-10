@@ -8,6 +8,7 @@ import {
   filterSpans,
   getAncestorPath,
 } from "../src/trace-resolver.js";
+import { redactSpans } from "../src/redact.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = JSON.parse(
@@ -37,6 +38,7 @@ const rum: RumRecord[] = [
     session_id: "sess-1",
     view_url: "https://app.example.com/orders",
     _oo_trace_id: "019f4730db8d73b8a4c9b4aa3ba534a8",
+    usr_email: "rum-user@example.com",
   },
 ];
 
@@ -53,6 +55,23 @@ describe("trace-resolver", () => {
     expect(summary.error_path.length).toBeGreaterThan(0);
   });
 
+  it("uses primary error for error_path while focus uses ancestor path", () => {
+    const redactedSpans = redactSpans(fixture, "summary");
+    const summary = buildSummary(redactedSpans, config.attrs, false, rum);
+    const focusPath = getAncestorPath(
+      "a100000000000003",
+      redactedSpans,
+      config.attrs,
+    );
+
+    expect(
+      summary.error_path.some((s) => s.span_id === "a100000000000002"),
+    ).toBe(true);
+    expect(summary.error_path[0]?.span_id).not.toBe("a100000000000003");
+    expect(focusPath[0].span_id).toBe("a100000000000003");
+    expect(summary.actor?.email).toBe("[REDACTED]");
+  });
+
   it("filters error spans", () => {
     const errors = filterSpans(fixture, "errors", config.attrs);
     expect(errors.every((s) => s.span_status === "ERROR")).toBe(true);
@@ -61,6 +80,13 @@ describe("trace-resolver", () => {
   it("filters db spans", () => {
     const db = filterSpans(fixture, "db", config.attrs);
     expect(db.some((s) => s.db_statement)).toBe(true);
+  });
+
+  it("filters slow spans using middleware-aware ranking", () => {
+    const slow = filterSpans(fixture, "slow", config.attrs);
+    expect(slow.length).toBeGreaterThan(0);
+    expect(slow.length).toBeLessThanOrEqual(10);
+    expect(slow.some((s) => s.span_id === "a100000000000001")).toBe(true);
   });
 
   it("builds ancestor path for span", () => {

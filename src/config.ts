@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Config, TraceTimeRange } from "./types.js";
+import { toMicros } from "./time.js";
 
 export const TRACE_ID_RE = /^[0-9a-f]{32}$/i;
 export const SPAN_ID_RE = /^[0-9a-f]{16}$/i;
@@ -103,12 +104,4 @@ export function spanTimeRange(
     start_us: Math.max(0, start - windowUs),
     end_us: end + windowUs,
   };
-}
-
-function toMicros(value: number | string | undefined): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "string" ? Number(value) : value;
-  if (!Number.isFinite(n)) return null;
-  // Values below 1e15 are likely milliseconds
-  return n < 1_000_000_000_000_000 ? n * 1_000 : n;
 }

@@ -8,7 +8,6 @@ Works with **any** OpenObserve deployment — self-hosted or cloud — as long a
 
 ## Tools
 
-
 | Tool                | Use when                                                  |
 | ------------------- | --------------------------------------------------------- |
 | `get_trace_summary` | You have a `trace_id` — start here                        |
@@ -16,20 +15,13 @@ Works with **any** OpenObserve deployment — self-hosted or cloud — as long a
 | `get_span`          | You only have a `span_id`                                 |
 | `get_trace`         | Full bundle (all spans, tree, RUM logs)                   |
 
-
-
-
 ## Requirements
 
 - Node.js **20+**
 - OpenObserve with OTLP traces ingested into a traces stream
 - An API auth header (Basic or Bearer) with search permission
 
-
-
 ## Install
-
-
 
 ### Option A — npm (recommended after publish)
 
@@ -47,8 +39,6 @@ cd openobserve-traces-mcp
 npm ci
 npm run build
 ```
-
-
 
 ## Cursor configuration
 
@@ -102,7 +92,6 @@ Copy from OpenObserve UI: **Data → Data sources → Traces (OpenTelemetry) →
 
 ## Environment variables
 
-
 | Variable                            | Required | Default    | Description                                                  |
 | ----------------------------------- | -------- | ---------- | ------------------------------------------------------------ |
 | `OPENOBSERVE_URL`                   | yes      | —          | OpenObserve base URL (e.g. `http://localhost:5080`)          |
@@ -114,11 +103,10 @@ Copy from OpenObserve UI: **Data → Data sources → Traces (OpenTelemetry) →
 | `SPAN_LOOKUP_WINDOW_HOURS`          | no       | `24`       | How far back to search when resolving `trace_id` / `span_id` |
 | `TRACE_LOOKUP_WINDOW_MINUTES`       | no       | `30`       | Narrow window tried first (UUIDv7-style trace IDs only)      |
 | `MAX_SPANS_PER_TRACE`               | no       | `500`      | Cap spans returned per trace                                 |
-| `OPENOBSERVE_ATTR_CORRELATION_ID`   | no       | *(empty)*  | Extra span field for correlation id                          |
-| `OPENOBSERVE_ATTR_ERROR_MESSAGE`    | no       | *(empty)*  | Extra span field for app error message                       |
-| `OPENOBSERVE_ATTR_FAILED`           | no       | *(empty)*  | Extra span field for app failure flag                        |
-| `OPENOBSERVE_ATTR_ORGANIZATION_IDS` | no       | *(empty)*  | Extra span field for organization ids                        |
-
+| `OPENOBSERVE_ATTR_CORRELATION_ID`   | no       | _(empty)_  | Extra span field for correlation id                          |
+| `OPENOBSERVE_ATTR_ERROR_MESSAGE`    | no       | _(empty)_  | Extra span field for app error message                       |
+| `OPENOBSERVE_ATTR_FAILED`           | no       | _(empty)_  | Extra span field for app failure flag                        |
+| `OPENOBSERVE_ATTR_ORGANIZATION_IDS` | no       | _(empty)_  | Extra span field for organization ids                        |
 
 Set optional `OPENOBSERVE_ATTR_*` only if your OTLP pipeline adds custom span attributes. Standard OTEL fields (`span_status`, `http_*`, `exception.message`, etc.) work without them.
 

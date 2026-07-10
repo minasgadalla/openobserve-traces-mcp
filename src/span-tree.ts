@@ -4,6 +4,7 @@ import type {
   SpanNode,
   SpanRecord,
 } from "./types.js";
+import { toMicros } from "./time.js";
 
 const MIDDLEWARE_NOISE =
   /middleware|http\.receive|http\.send|express\.middleware/i;
@@ -168,8 +169,9 @@ function deepestSpan(
   candidates: SpanRecord[],
   allSpans: SpanRecord[],
 ): SpanRecord {
+  const byId = new Map(allSpans.map((s) => [s.span_id, s]));
+
   const depthOf = (span: SpanRecord): number => {
-    const byId = new Map(allSpans.map((s) => [s.span_id, s]));
     let depth = 0;
     let current: SpanRecord | undefined = span;
     const seen = new Set<string>();
@@ -215,11 +217,4 @@ export function computeTraceDurationUs(spans: SpanRecord[]): number | null {
     .filter((v): v is number => v != null);
   if (starts.length === 0 || ends.length === 0) return null;
   return Math.max(...ends) - Math.min(...starts);
-}
-
-function toMicros(value: number | string | undefined): number | null {
-  if (value == null || value === "") return null;
-  const n = typeof value === "string" ? Number(value) : value;
-  if (!Number.isFinite(n)) return null;
-  return n < 1_000_000_000_000_000 ? n * 1_000 : n;
 }

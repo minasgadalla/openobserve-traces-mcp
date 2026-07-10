@@ -13,6 +13,7 @@ import {
   validateSpanId,
   validateTraceId,
 } from "./config.js";
+import { z } from "zod";
 
 const SPAN_COLUMNS = [
   "span_id",
@@ -65,12 +66,12 @@ export class OpenObserveClient {
       ORDER BY start_time`;
 
     const hits = await this.search(sql, timeRange, -1, "traces");
-    let spans = hits.map(normalizeHit).filter((h) => h.span_id);
+    let spans = hits.map(normalizeSpanHit).filter((h) => h.span_id);
 
     if (spans.length === 0) {
       const fallbackRange = nowTimeRange(this.config.spanLookupWindowHours);
       const fallbackHits = await this.search(sql, fallbackRange, -1, "traces");
-      spans = fallbackHits.map(normalizeHit).filter((h) => h.span_id);
+      spans = fallbackHits.map(normalizeSpanHit).filter((h) => h.span_id);
       if (spans.length > 0) {
         timeRange = fallbackRange;
       }
@@ -99,7 +100,7 @@ export class OpenObserveClient {
       LIMIT 1`;
 
     let hits = await this.search(sql, fallbackRange, 1, "traces");
-    let span = hits.map(normalizeHit).find((h) => h.span_id) ?? null;
+    let span = hits.map(normalizeSpanHit).find((h) => h.span_id) ?? null;
 
     if (!span) {
       return { span: null, timeRange: fallbackRange };
@@ -112,11 +113,9 @@ export class OpenObserveClient {
         this.config.traceLookupWindowMinutes,
       );
       hits = await this.search(sql, timeRange, 1, "traces");
-      span = hits.map(normalizeHit).find((h) => h.span_id) ?? span;
-      if (!hits.length) {
-        hits = await this.search(sql, fallbackRange, 1, "traces");
-        span = hits.map(normalizeHit).find((h) => h.span_id) ?? span;
-        timeRange = fallbackRange;
+      const refined = hits.map(normalizeSpanHit).find((h) => h.span_id) ?? null;
+      if (refined) {
+        span = refined;
       }
     } else {
       const fromSpan = spanTimeRange(
@@ -126,7 +125,11 @@ export class OpenObserveClient {
       if (fromSpan) {
         timeRange = fromSpan;
         hits = await this.search(sql, fromSpan, 1, "traces");
-        span = hits.map(normalizeHit).find((h) => h.span_id) ?? span;
+        const refined =
+          hits.map(normalizeSpanHit).find((h) => h.span_id) ?? null;
+        if (refined) {
+          span = refined;
+        }
       }
     }
 
@@ -157,7 +160,7 @@ export class OpenObserveClient {
     ORDER BY _timestamp`;
 
     const hits = await this.search(sql, timeRange, -1, "logs");
-    return hits.map(normalizeHit) as RumRecord[];
+    return hits.map(normalizeRecordHit) as RumRecord[];
   }
 
   async fetchRumLogsBySession(
@@ -171,7 +174,7 @@ export class OpenObserveClient {
       ORDER BY _timestamp`;
 
     const hits = await this.search(sql, timeRange, -1, "logs");
-    return hits.map(normalizeHit) as RumLogRecord[];
+    return hits.map(normalizeRecordHit) as RumLogRecord[];
   }
 
   private async search(
@@ -220,10 +223,38 @@ export class OpenObserveClient {
   }
 }
 
-function normalizeHit(hit: Record<string, unknown>): SpanRecord {
-  const source =
-    hit._source && typeof hit._source === "object"
-      ? (hit._source as Record<string, unknown>)
-      : hit;
-  return source as SpanRecord;
+const spanHitSchema = z
+  .object({
+    span_id: z.string().min(1),
+    trace_id: z.string().optional(),
+    reference_parent_span_id: z.string().nullable().optional(),
+    operation_name: z.string().optional(),
+    span_status: z.string().optional(),
+    duration: z.union([z.number(), z.string()]).optional(),
+    start_time: z.union([z.number(), z.string()]).optional(),
+    end_time: z.union([z.number(), z.string()]).optional(),
+    service_name: z.string().optional(),
+  })
+  .passthrough();
+
+function extractSource(hit: Record<string, unknown>): Record<string, unknown> {
+  return hit._source && typeof hit._source === "object"
+    ? (hit._source as Record<string, unknown>)
+    : hit;
+}
+
+function normalizeSpanHit(hit: Record<string, unknown>): SpanRecord {
+  const parsed = spanHitSchema.safeParse(extractSource(hit));
+  if (!parsed.success) {
+    throw new Error(
+      `Malformed OpenObserve span hit: ${parsed.error.issues.map((i) => i.message).join(", ")}`,
+    );
+  }
+  return parsed.data as SpanRecord;
+}
+
+function normalizeRecordHit(
+  hit: Record<string, unknown>,
+): Record<string, unknown> {
+  return extractSource(hit);
 }

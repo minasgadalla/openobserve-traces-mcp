@@ -9,7 +9,8 @@ import type {
 } from "./types.js";
 import { validateTraceId } from "./config.js";
 import { OpenObserveClient } from "./openobserve-client.js";
-import { redactSpans } from "./redact.js";
+import { redactRecords, redactSpans } from "./redact.js";
+import { toMicrosFromSpans } from "./time.js";
 import {
   buildErrorPath,
   buildSpanTree,
@@ -46,21 +47,21 @@ export async function resolveTrace(
     warnings.push(`No spans found for trace_id ${normalized}`);
   }
 
-  let rum: RumRecord[] = [];
+  let rawRum: RumRecord[] = [];
   try {
-    rum = await client.fetchRumByTraceId(normalized, timeRange);
+    rawRum = await client.fetchRumByTraceId(normalized, timeRange);
   } catch (err) {
     warnings.push(
       `RUM fetch failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
-  let rum_logs: TraceBundle["rum_logs"];
-  if (options.includeRumLogs !== false && rum.length > 0) {
-    const sessionId = rum.find((r) => r.session_id)?.session_id;
+  let rawRumLogs: TraceBundle["rum_logs"];
+  if (options.includeRumLogs === true && rawRum.length > 0) {
+    const sessionId = rawRum.find((r) => r.session_id)?.session_id;
     if (sessionId) {
       try {
-        rum_logs = await client.fetchRumLogsBySession(sessionId, timeRange);
+        rawRumLogs = await client.fetchRumLogsBySession(sessionId, timeRange);
       } catch (err) {
         warnings.push(
           `RUM logs fetch failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -71,14 +72,12 @@ export async function resolveTrace(
 
   const redactMode = options.redactMode ?? "summary";
   const spans = redactSpans(rawSpans, redactMode);
+  const rum = redactRecords(rawRum, redactMode);
+  const rum_logs = rawRumLogs
+    ? redactRecords(rawRumLogs, redactMode)
+    : undefined;
   const span_tree = buildSpanTree(spans);
-  const summary = buildSummary(
-    spans,
-    config.attrs,
-    truncated,
-    rum,
-    options.focusSpanId,
-  );
+  const summary = buildSummary(spans, config.attrs, truncated, rum);
 
   const startUs = toMicrosFromSpans(spans, "start") ?? timeRange.start_us;
   const endUs = toMicrosFromSpans(spans, "end") ?? timeRange.end_us;
@@ -109,12 +108,11 @@ export function buildSummary(
   attrs: AppAttrNames,
   truncated: boolean,
   rum: RumRecord[],
-  focusSpanId?: string,
 ): TraceSummary {
   const errorSpans = spans.filter((s) => isErrorSpan(s, attrs));
   const primary =
     errorSpans.length > 0 ? pickPrimaryErrorSpan(errorSpans) : null;
-  const error_path = buildErrorPath(spans, attrs, focusSpanId);
+  const error_path = buildErrorPath(spans, attrs, primary?.span_id);
   const root_error = primary ? (getErrorMessage(primary, attrs) ?? null) : null;
 
   const httpSpan =
@@ -194,25 +192,6 @@ function findFirstAttr(spans: SpanRecord[], key: string): string | null {
   return null;
 }
 
-function toMicrosFromSpans(
-  spans: SpanRecord[],
-  kind: "start" | "end",
-): number | null {
-  const key = kind === "start" ? "start_time" : "end_time";
-  const values = spans
-    .map((s) => {
-      const v = s[key];
-      if (v == null || v === "") return null;
-      const n = typeof v === "string" ? Number(v) : v;
-      if (!Number.isFinite(n)) return null;
-      return n < 1_000_000_000_000_000 ? n * 1_000 : n;
-    })
-    .filter((v): v is number => v != null);
-
-  if (values.length === 0) return null;
-  return kind === "start" ? Math.min(...values) : Math.max(...values);
-}
-
 export function filterSpans(
   spans: SpanRecord[],
   filter?: SpanFilter,
@@ -247,19 +226,15 @@ export function filterSpans(
             .toLowerCase()
             .includes("db"),
       );
-    case "slow":
-      return [...spans]
-        .sort((a, b) => toNum(b.duration) - toNum(a.duration))
-        .slice(0, 10);
+    case "slow": {
+      const slowIds = new Set(
+        getSlowSpans(spans, 10).map((entry) => entry.span_id),
+      );
+      return spans.filter((span) => slowIds.has(span.span_id));
+    }
     default:
       return spans;
   }
-}
-
-function toNum(v: number | string | undefined): number {
-  if (v == null) return 0;
-  const n = typeof v === "string" ? Number(v) : v;
-  return Number.isFinite(n) ? n : 0;
 }
 
 export function getAncestorPath(

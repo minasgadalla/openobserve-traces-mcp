@@ -4,14 +4,14 @@
   "description": "stdio MCP server for OpenObserve OSS trace investigation by trace_id or span_id",
   "type": "module",
   "license": "MIT",
-  "author": "Minas",
+  "author": "Minas Gadalla",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/minas/openobserve-traces-mcp.git"
+    "url": "git+https://github.com/minasgadalla/openobserve-traces-mcp.git"
   },
-  "homepage": "https://github.com/minas/openobserve-traces-mcp#readme",
+  "homepage": "https://github.com/minasgadalla/openobserve-traces-mcp#readme",
   "bugs": {
-    "url": "https://github.com/minas/openobserve-traces-mcp/issues"
+    "url": "https://github.com/minasgadalla/openobserve-traces-mcp/issues"
   },
   "engines": {
     "node": ">=20"

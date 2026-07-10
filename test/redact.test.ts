@@ -6,9 +6,13 @@ describe("redact", () => {
     const result = redactRecord({
       span_id: "abc",
       password_hash: "secret",
+      email: "user@example.com",
+      user_id: "usr-1",
       db_statement: "SELECT 1",
     });
     expect(result.password_hash).toBe("[REDACTED]");
+    expect(result.email).toBe("[REDACTED]");
+    expect(result.user_id).toBe("[REDACTED]");
     expect(result.span_id).toBe("abc");
   });
 

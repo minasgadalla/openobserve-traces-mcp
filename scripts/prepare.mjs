@@ -5,7 +5,10 @@ import { execSync } from "node:child_process";
 if (existsSync(".git")) {
   try {
     execSync("husky", { stdio: "inherit" });
-  } catch {
-    // Non-fatal for contributors on minimal environments.
+  } catch (err) {
+    console.warn(
+      "husky setup skipped:",
+      err instanceof Error ? err.message : String(err),
+    );
   }
 }
