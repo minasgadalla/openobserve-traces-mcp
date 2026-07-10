@@ -1,0 +1,74 @@
+{
+  "name": "openobserve-traces-mcp",
+  "version": "1.0.0",
+  "description": "stdio MCP server for OpenObserve OSS trace investigation by trace_id or span_id",
+  "type": "module",
+  "license": "MIT",
+  "author": "Minas Gadalla",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minasgadalla/openobserve-traces-mcp.git"
+  },
+  "homepage": "https://github.com/minasgadalla/openobserve-traces-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/minasgadalla/openobserve-traces-mcp/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "openobserve-traces-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "node scripts/prepare.mjs",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "openobserve",
+    "traces",
+    "opentelemetry",
+    "observability"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1",
+    "vitest": "^3.0.9"
+  },
+  "lint-staged": {
+    "*.{ts,js,json,md}": [
+      "prettier --write"
+    ],
+    "*.{ts,js}": [
+      "eslint --fix"
+    ]
+  }
+}

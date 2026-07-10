@@ -1,0 +1,70 @@
+[
+  {
+    "span_id": "a100000000000001",
+    "reference_parent_span_id": null,
+    "trace_id": "019f4730db8d73b8a4c9b4aa3ba534a8",
+    "service_name": "api-gateway",
+    "operation_name": "POST /api/orders",
+    "span_status": "OK",
+    "duration": 45000,
+    "start_time": 1740000000000000,
+    "end_time": 1740000000450000,
+    "http_method": "POST",
+    "http_route": "/api/orders",
+    "http_status_code": "409",
+    "email": "user@example.com",
+    "user_id": "usr-1",
+    "app_correlation_id": "corr-abc-123"
+  },
+  {
+    "span_id": "a100000000000002",
+    "reference_parent_span_id": "a100000000000001",
+    "trace_id": "019f4730db8d73b8a4c9b4aa3ba534a8",
+    "service_name": "orders-service",
+    "operation_name": "OrdersController.create",
+    "span_status": "ERROR",
+    "duration": 32000,
+    "start_time": 1740000000100000,
+    "end_time": 1740000000430000,
+    "http_method": "POST",
+    "http_route": "/api/orders",
+    "http_status_code": "409",
+    "app_activity_error_message": "Order conflict: duplicate resource",
+    "app_activity_failed": true,
+    "app_organization_ids": "org-42"
+  },
+  {
+    "span_id": "a100000000000003",
+    "reference_parent_span_id": "a100000000000002",
+    "trace_id": "019f4730db8d73b8a4c9b4aa3ba534a8",
+    "service_name": "orders-service",
+    "operation_name": "db.query",
+    "span_status": "OK",
+    "duration": 12000,
+    "start_time": 1740000000150000,
+    "end_time": 1740000000270000,
+    "db_statement": "INSERT INTO orders (id, user_id) VALUES ($1, $2)"
+  },
+  {
+    "span_id": "a100000000000004",
+    "reference_parent_span_id": "a100000000000002",
+    "trace_id": "019f4730db8d73b8a4c9b4aa3ba534a8",
+    "service_name": "orders-service",
+    "operation_name": "validate-order",
+    "span_status": "OK",
+    "duration": 5000,
+    "start_time": 1740000000120000,
+    "end_time": 1740000000170000
+  },
+  {
+    "span_id": "orphan-span-00001",
+    "reference_parent_span_id": "missing-parent-id",
+    "trace_id": "019f4730db8d73b8a4c9b4aa3ba534a8",
+    "service_name": "orders-service",
+    "operation_name": "orphan-worker",
+    "span_status": "OK",
+    "duration": 1000,
+    "start_time": 1740000000200000,
+    "end_time": 1740000000210000
+  }
+]
